@@ -2,13 +2,16 @@
   "name": "FacuApp — Gestión Académica",
   "short_name": "FacuApp",
   "description": "Gestión académica personal: tareas, clases y materias",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0a0a0f",
   "theme_color": "#0a0a0f",
   "orientation": "portrait-primary",
   "lang": "es",
-  "categories": ["education", "productivity"],
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "icons/icon-192.png",
@@ -37,5 +40,6 @@
       "description": "Ver el calendario de clases",
       "url": "/?tab=cal"
     }
-  ]
+  ],
+  "scope": "./"
 }
