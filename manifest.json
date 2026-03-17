@@ -1,0 +1,41 @@
+{
+  "name": "FacuApp — Gestión Académica",
+  "short_name": "FacuApp",
+  "description": "Gestión académica personal: tareas, clases y materias",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Nueva Tarea",
+      "short_name": "Tarea",
+      "description": "Ir a la sección de tareas",
+      "url": "/?tab=tasks"
+    },
+    {
+      "name": "Calendario",
+      "short_name": "Clases",
+      "description": "Ver el calendario de clases",
+      "url": "/?tab=cal"
+    }
+  ]
+}

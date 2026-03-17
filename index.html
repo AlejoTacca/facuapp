@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+
+  <!-- PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="FacuApp"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color" content="#0a0a0f"/>
+  <meta name="description" content="Gestión académica personal — tareas, clases y materias"/>
+
+  <!-- PWA Icons -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png"/>
+
+  <!-- Manifest -->
+  <link rel="manifest" href="manifest.json"/>
+
+  <title>FacuApp</title>
+
+  <!-- React + Babel (CDN — sin bundler, funciona directo en GitHub Pages) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg0: #0a0a0f;
+      --bg1: #12121a;
+      --bg2: #1a1a26;
+      --bg3: #22223a;
+      --acc: #6366f1;
+      --acc2: #818cf8;
+      --acc3: #a5b4fc;
+      --vio: #7c3aed;
+      --cyan: #06b6d4;
+      --rose: #f43f5e;
+      --amber: #f59e0b;
+      --em: #10b981;
+      --txt0: #f1f5f9;
+      --txt1: #94a3b8;
+      --txt2: #64748b;
+      --bdr: #2a2a40;
+      --bdr2: #3a3a58;
+      --r4: 4px; --r8: 8px; --r12: 12px; --r16: 16px; --r20: 20px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg0);
+      color: var(--txt0);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+      overflow: hidden;
+    }
+
+    #root {
+      height: 100%;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      max-width: 480px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* Prevent iOS zoom on inputs */
+    input, select, textarea, button {
+      font-family: inherit;
+      font-size: 16px;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr2); border-radius: 2px; }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pop {
+      0%   { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    @keyframes toastIn {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+      100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .fade { animation: fadeIn .25s ease both; }
+    .pop  { animation: pop .2s cubic-bezier(.34, 1.56, .64, 1) both; }
+
+    /* Utilities */
+    .btn {
+      cursor: pointer; border: none; outline: none;
+      transition: all .15s; user-select: none; -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.96); }
+
+    .card {
+      background: var(--bg1);
+      border: 1px solid var(--bdr);
+      border-radius: var(--r16);
+      padding: 16px;
+      transition: border-color .2s;
+    }
+    .card:hover { border-color: var(--bdr2); }
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+    }
+
+    /* Navigation */
+    .nav {
+      display: flex;
+      background: var(--bg1);
+      border-top: 1px solid var(--bdr);
+      padding: 8px 0;
+      padding-bottom: calc(8px + var(--safe-bottom));
+      padding-left: var(--safe-left);
+      padding-right: var(--safe-right);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 3px; padding: 6px 4px;
+      cursor: pointer; border: none; background: none;
+      color: var(--txt2); font-size: 10px;
+      transition: color .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-btn.active { color: var(--acc2); }
+    .nav-btn svg { width: 22px; height: 22px; }
+
+    /* Header */
+    .header {
+      padding: 16px 20px 12px;
+      padding-top: calc(16px + var(--safe-top));
+      padding-left: calc(20px + var(--safe-left));
+      padding-right: calc(20px + var(--safe-right));
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg0);
+      border-bottom: 1px solid var(--bdr);
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 600;
+      background: linear-gradient(135deg, var(--acc2), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Main section */
+    .section {
+      padding: 16px 20px;
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: calc(90px + var(--safe-bottom));
+      right: calc(20px + var(--safe-right));
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: var(--acc);
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(99,102,241,.4);
+      z-index: 50;
+      transition: all .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .fab:active { transform: scale(0.92); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.75);
+      z-index: 100;
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    .modal {
+      background: var(--bg1);
+      border: 1px solid var(--bdr2);
+      border-radius: var(--r20) var(--r20) 0 0;
+      width: 100%; max-width: 500px;
+      padding: 24px 20px;
+      padding-bottom: calc(24px + var(--safe-bottom));
+      max-height: 88vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      animation: slideUp .25s cubic-bezier(.32,1,.23,1);
+    }
+    .modal h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px; font-weight: 600; margin-bottom: 20px;
+    }
+
+    /* Form elements */
+    .inp {
+      background: var(--bg2);
+      border: 1px solid var(--bdr);
+      border-radius: var(--r8);
+      padding: 12px;
+      width: 100%;
+      color: var(--txt0);
+      font-size: 16px;
+      transition: border-color .2s;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .inp:focus { border-color: var(--acc); }
+    .inp::placeholder { color: var(--txt2); }
+
+    label {
+      font-size: 13px; color: var(--txt1);
+      display: block; margin-bottom: 6px;
+    }
+
+    select.inp option { background: var(--bg2); color: var(--txt0); }
+
+    .row { display: flex; gap: 10px; align-items: flex-start; }
+    .col { display: flex; flex-direction: column; gap: 12px; }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 6px; background: var(--bg3);
+      border-radius: 3px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--acc), var(--cyan));
+      transition: width .6s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    /* Checkbox */
+    .checkbox {
+      width: 22px; height: 22px; border-radius: 6px;
+      border: 2px solid var(--bdr2);
+      background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .15s; flex-shrink: 0;
+    }
+    .checkbox.checked { background: var(--acc); border-color: var(--acc); }
+
+    /* Segmented control */
+    .seg {
+      display: flex; background: var(--bg2);
+      border-radius: var(--r8); padding: 3px; gap: 2px;
+      flex-shrink: 0;
+    }
+    .seg-btn {
+      flex: 1; padding: 7px; border: none; border-radius: 6px;
+      background: none; color: var(--txt1); font-size: 13px;
+      cursor: pointer; transition: all .2s;
+    }
+    .seg-btn.active {
+      background: var(--bg3); color: var(--txt0); font-weight: 500;
+    }
+
+    /* Empty state */
+    .empty {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; padding: 48px 20px;
+      color: var(--txt2); text-align: center;
+    }
+    .empty svg { opacity: .3; }
+
+    /* Progress items */
+    .prog-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--bdr);
+    }
+    .prog-item:last-child { border-bottom: none; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: calc(80px + var(--safe-top));
+      left: 50%; transform: translateX(-50%);
+      color: #fff; padding: 12px 20px;
+      border-radius: 12px; font-size: 14px; font-weight: 500;
+      z-index: 200; white-space: nowrap;
+      animation: toastIn .3s ease;
+      pointer-events: none;
+    }
+
+    /* Scrollable filter chips */
+    .filter-scroll {
+      display: flex; gap: 8px;
+      overflow-x: auto; padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .filter-scroll::-webkit-scrollbar { display: none; }
+
+    .spacer-nav { height: 80px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useMemo } = React;
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+const COLORS = ['#6366f1','#06b6d4','#f43f5e','#f59e0b','#10b981','#8b5cf6','#ec4899','#14b8a6'];
+const PRI_COLORS = { alta: '#f43f5e', media: '#f59e0b', baja: '#10b981' };
+const DAYS       = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const DAYS_FULL  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+const MEDALS = [
+  { id:'primer',   name:'Primera Tarea',        desc:'Completaste tu primera tarea',    icon:'🎯', req:1  },
+  { id:'cinco',    name:'A Paso Firme',          desc:'5 tareas completadas',            icon:'⚡', req:5  },
+  { id:'diez',     name:'Estudiante Dedicado',   desc:'10 tareas completadas',           icon:'🔥', req:10 },
+  { id:'veinte',   name:'Imparable',             desc:'20 tareas completadas',           icon:'🏆', req:20 },
+  { id:'cincuenta',name:'Leyenda Académica',     desc:'50 tareas completadas',           icon:'💎', req:50 },
+];
+
+// ─── Date helper (local timezone, avoids UTC offset bugs) ───────────────────
+function localDateStr(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// ─── LocalStorage helpers ────────────────────────────────────────────────────
+function load(key, def) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }
+  catch { return def; }
+}
+function save(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+// ─── SVG Icons ───────────────────────────────────────────────────────────────
+function Icon({ name, size = 20, color }) {
+  const s = {
+    width: size, height: size,
+    stroke: color || 'currentColor',
+    fill: 'none', strokeWidth: 1.8,
+    strokeLinecap: 'round', strokeLinejoin: 'round',
+    display: 'block', flexShrink: 0,
+  };
+  const icons = {
+    tasks:    <svg viewBox="0 0 24 24" style={s}><rect x="3" y="5" width="6" height="6" rx="1"/><path d="M9 5h10M9 9h10M9 13h10M3 13h1M3 17h1M9 17h10"/></svg>,
+    calendar: <svg viewBox="0 0 24 24" style={s}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
+    book:     <svg viewBox="0 0 24 24" style={s}><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
+    trophy:   <svg viewBox="0 0 24 24" style={s}><path d="M6 9H3.5a2.5 2.5 0 010-5H6M18 9h2.5a2.5 2.5 0 000-5H18M8 21h8M12 17v4M7 4h10v6a5 5 0 01-10 0V4z"/></svg>,
+    settings: <svg viewBox="0 0 24 24" style={s}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+    plus:     <svg viewBox="0 0 24 24" style={s}><path d="M12 5v14M5 12h14"/></svg>,
+    check:    <svg viewBox="0 0 24 24" style={s}><path d="M20 6L9 17l-5-5"/></svg>,
+    trash:    <svg viewBox="0 0 24 24" style={s}><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>,
+    edit:     <svg viewBox="0 0 24 24" style={s}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+    download: <svg viewBox="0 0 24 24" style={s}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>,
+    upload:   <svg viewBox="0 0 24 24" style={s}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>,
+    filter:   <svg viewBox="0 0 24 24" style={s}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+    bell:     <svg viewBox="0 0 24 24" style={s}><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>,
+    x:        <svg viewBox="0 0 24 24" style={s}><path d="M18 6L6 18M6 6l12 12"/></svg>,
+    chevron:  <svg viewBox="0 0 24 24" style={s}><path d="M9 18l6-6-6-6"/></svg>,
+  };
+  return icons[name] || null;
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+function App() {
+  const [tab,       setTab]       = useState('tasks');
+  const [materias,  setMaterias]  = useState(() => load('fm_materias', []));
+  const [tareas,    setTareas]    = useState(() => load('fm_tareas',   []));
+  const [clases,    setClases]    = useState(() => load('fm_clases',   []));
+  const [totalComp, setTotalComp] = useState(() => load('fm_total',    0));
+  const [modal,     setModal]     = useState(null);
+  const [toast,     setToast]     = useState(null);
+
+  useEffect(() => save('fm_materias', materias),  [materias]);
+  useEffect(() => save('fm_tareas',   tareas),     [tareas]);
+  useEffect(() => save('fm_clases',   clases),     [clases]);
+  useEffect(() => save('fm_total',    totalComp),  [totalComp]);
+
+  const showToast = (msg, type = 'ok') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 2800);
+  };
+
+  const completarTarea = (id) => {
+    const tarea = tareas.find(x => x.id === id);
+    if (!tarea) return;
+    const completing = !tarea.done;
+    setTareas(t => t.map(x => x.id === id ? { ...x, done: !x.done } : x));
+    if (completing) {
+      const n = totalComp + 1;
+      setTotalComp(n);
+      const med = MEDALS.find(m => m.req === n);
+      if (med) showToast(`${med.icon} ¡Medalla desbloqueada: ${med.name}!`, 'medal');
+    }
+  };
+
+  // ── Backup: Export ──
+  const exportar = () => {
+    const data = {
+      version: '1.0',
+      exportado: new Date().toISOString(),
+      materias, tareas, clases,
+      totalCompletadas: totalComp,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'backup_facu.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Backup exportado correctamente ✓');
+  };
+
+  // ── Backup: Import ──
+  const importar = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const d = JSON.parse(ev.target.result);
+        // Schema validation
+        if (!Array.isArray(d.materias) || !Array.isArray(d.tareas) || !Array.isArray(d.clases)) {
+          throw new Error('Esquema inválido');
+        }
+        setMaterias(d.materias || []);
+        setTareas(d.tareas     || []);
+        setClases(d.clases     || []);
+        setTotalComp(d.totalCompletadas || 0);
+        showToast('Datos importados correctamente ✓');
+      } catch {
+        showToast('Error: archivo JSON inválido', 'err');
+      }
+    };
+    reader.readAsText(file);
+    // reset input so same file can be re-imported
+    e.target.value = '';
+  };
+
+  const hoy    = localDateStr();
+  const pendientes = tareas.filter(t => !t.done);
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+      <Header tab={tab} pendientes={pendientes.length} />
+
+      <div style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
+        {tab === 'tasks' && (
+          <Tasks
+            tareas={tareas} materias={materias} hoy={hoy}
+            onComplete={completarTarea}
+            onNew={() => setModal('tarea')}
+            onDelete={id => setTareas(t => t.filter(x => x.id !== id))}
+          />
+        )}
+        {tab === 'cal' && (
+          <Calendario
+            clases={clases} materias={materias}
+            onNew={() => setModal('clase')}
+            onDelete={id => setClases(c => c.filter(x => x.id !== id))}
+            onEdit={c => setModal({ type:'clase', edit:c })}
+          />
+        )}
+        {tab === 'mat' && (
+          <Materias
+            materias={materias} tareas={tareas}
+            onNew={() => setModal('materia')}
+            onDelete={id => {
+              setMaterias(m => m.filter(x => x.id !== id));
+              setTareas(t => t.filter(x => x.materiaId !== id));
+            }}
+          />
+        )}
+        {tab === 'prog' && <Progreso tareas={tareas} totalComp={totalComp} />}
+        {tab === 'cfg'  && <Config onExport={exportar} onImport={importar} />}
+      </div>
+
+      <nav className="nav">
+        {[
+          ['tasks',  'tasks',    'Tareas'],
+          ['cal',    'calendar', 'Clases'],
+          ['mat',    'book',     'Materias'],
+          ['prog',   'trophy',   'Progreso'],
+          ['cfg',    'settings', 'Config'],
+        ].map(([id, icon, label]) => (
+          <button
+            key={id}
+            className={`nav-btn${tab === id ? ' active' : ''}`}
+            onClick={() => setTab(id)}
+          >
+            <Icon name={icon} size={22} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {modal && (
+        <Modal
+          modal={modal}
+          materias={materias}
+          onClose={() => setModal(null)}
+          onSaveTarea={t  => { setTareas(x => [t, ...x]);  setModal(null); }}
+          onSaveMateria={m => { setMaterias(x => [...x, m]); setModal(null); }}
+          onSaveClase={(c, edit) => {
+            if (edit) setClases(x => x.map(y => y.id === edit.id ? c : y));
+            else      setClases(x => [c, ...x]);
+            setModal(null);
+          }}
+        />
+      )}
+
+      {toast && (
+        <div
+          className="toast"
+          style={{
+            background: toast.type === 'err'   ? 'rgba(244,63,94,.92)'
+                      : toast.type === 'medal' ? 'rgba(99,102,241,.92)'
+                      : 'rgba(16,185,129,.92)',
+          }}
+        >
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Header ──────────────────────────────────────────────────────────────────
+function Header({ tab, pendientes }) {
+  const titles = {
+    tasks: 'Mis Tareas',
+    cal:   'Calendario',
+    mat:   'Materias',
+    prog:  'Progreso',
+    cfg:   'Configuración',
+  };
+  return (
+    <div className="header">
+      <h1>{titles[tab] || 'FacuApp'}</h1>
+      {pendientes > 0 && (
+        <span className="pill" style={{ background:'rgba(244,63,94,.15)', color:'#f43f5e' }}>
+          {pendientes} pendiente{pendientes !== 1 ? 's' : ''}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── Tasks ───────────────────────────────────────────────────────────────────
+function Tasks({ tareas, materias, onComplete, onNew, onDelete, hoy }) {
+  const [filter, setFilter] = useState('todas');
+  const [sort,   setSort]   = useState('fecha');
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tmrStr = localDateStr(tomorrow);
+
+  const urgentes = tareas.filter(t => !t.done && t.fecha && t.fecha <= tmrStr).length;
+
+  const filtered = useMemo(() => {
+    let t = [...tareas];
+    if      (filter === 'hoy')       t = t.filter(x => !x.done && x.fecha && x.fecha <= hoy);
+    else if (filter === 'pendientes') t = t.filter(x => !x.done);
+    else if (filter === 'hechas')     t = t.filter(x =>  x.done);
+    if      (sort === 'fecha') t.sort((a,b) => (a.fecha||'9999').localeCompare(b.fecha||'9999'));
+    else if (sort === 'prio')  { const o = {alta:0,media:1,baja:2}; t.sort((a,b) => o[a.prioridad]-o[b.prioridad]); }
+    return t;
+  }, [tareas, filter, sort, hoy]);
+
+  return (
+    <div className="section fade">
+      {urgentes > 0 && (
+        <div style={{ background:'rgba(244,63,94,.1)', border:'1px solid rgba(244,63,94,.3)', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:8 }}>
+          <Icon name="bell" size={16} color="#f43f5e" />
+          <span style={{ fontSize:13, color:'#f43f5e', fontWeight:500 }}>
+            {urgentes} tarea{urgentes > 1 ? 's' : ''} para hoy o vencida{urgentes > 1 ? 's' : ''}
+          </span>
+        </div>
+      )}
+
+      <div className="filter-scroll">
+        {[['todas','Todas'],['hoy','Para hoy'],['pendientes','Pendientes'],['hechas','Hechas']].map(([v,l]) => (
+          <button
+            key={v}
+            className="btn pill"
+            style={{
+              background: filter === v ? 'var(--acc)' : 'var(--bg2)',
+              color:      filter === v ? '#fff' : 'var(--txt1)',
+              whiteSpace: 'nowrap', flexShrink: 0, padding:'6px 14px',
+            }}
+            onClick={() => setFilter(v)}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+        <Icon name="filter" size={14} color="var(--txt2)" />
+        <select className="inp" style={{ flex:1, padding:'8px 10px' }} value={sort} onChange={e => setSort(e.target.value)}>
+          <option value="fecha">Ordenar por fecha</option>
+          <option value="prio">Ordenar por prioridad</option>
+        </select>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="empty">
+          <Icon name="tasks" size={40} />
+          <p>No hay tareas en esta vista</p>
+        </div>
+      ) : (
+        filtered.map(t => (
+          <TareaCard
+            key={t.id} tarea={t} materias={materias} hoy={hoy}
+            onComplete={onComplete} onDelete={onDelete}
+          />
+        ))
+      )}
+
+      <div className="spacer-nav" />
+      <button className="fab btn" onClick={onNew}>
+        <Icon name="plus" size={24} color="#fff" />
+      </button>
+    </div>
+  );
+}
+
+function TareaCard({ tarea, materias, onComplete, onDelete, hoy }) {
+  const mat    = materias.find(m => m.id === tarea.materiaId);
+  const vence  = tarea.fecha && tarea.fecha < hoy && !tarea.done;
+  const hoyEq  = tarea.fecha === hoy && !tarea.done;
+
+  return (
+    <div className="card pop" style={{ opacity: tarea.done ? .55 : 1, transition:'opacity .3s' }}>
+      <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
+        <div
+          className={`checkbox${tarea.done ? ' checked' : ''}`}
+          onClick={() => onComplete(tarea.id)}
+          style={{ marginTop:2 }}
+        >
+          {tarea.done && <Icon name="check" size={14} color="#fff" />}
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <p style={{
+            fontWeight:500, fontSize:15,
+            textDecoration: tarea.done ? 'line-through' : 'none',
+            color: tarea.done ? 'var(--txt2)' : 'var(--txt0)',
+            marginBottom:6, lineHeight:1.4,
+          }}>
+            {tarea.titulo}
+          </p>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
+            {mat && (
+              <span className="pill" style={{ background: mat.color+'22', color: mat.color, fontSize:11 }}>
+                {mat.nombre}
+              </span>
+            )}
+            <span className="pill" style={{ background: PRI_COLORS[tarea.prioridad]+'22', color: PRI_COLORS[tarea.prioridad], fontSize:11 }}>
+              <span style={{ width:5, height:5, borderRadius:'50%', background: PRI_COLORS[tarea.prioridad], display:'inline-block' }} />
+              {tarea.prioridad}
+            </span>
+            {tarea.fecha && (
+              <span style={{ fontSize:11, color: vence ? '#f43f5e' : hoyEq ? '#f59e0b' : 'var(--txt2)' }}>
+                {vence ? '⚠ Vencida · ' : hoyEq ? '⏰ Hoy · ' : '📅 '}
+                {tarea.fecha}
+              </span>
+            )}
+          </div>
+          {tarea.desc && (
+            <p style={{ fontSize:13, color:'var(--txt1)', marginTop:6, lineHeight:1.5 }}>{tarea.desc}</p>
+          )}
+        </div>
+        <button className="btn" style={{ color:'var(--txt2)', padding:4, marginTop:-2 }} onClick={() => onDelete(tarea.id)}>
+          <Icon name="trash" size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Calendario ──────────────────────────────────────────────────────────────
+function Calendario({ clases, materias, onNew, onDelete, onEdit }) {
+  const [view,       setView]       = useState('semana');
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const getWeekDays = () => {
+    const today = new Date();
+    const dow   = today.getDay();
+    const mon   = new Date(today);
+    mon.setDate(today.getDate() - dow + 1 + weekOffset * 7);
+    return Array.from({ length:7 }, (_, i) => {
+      const d = new Date(mon); d.setDate(mon.getDate() + i); return d;
+    });
+  };
+
+  const weekDays = getWeekDays();
+  const hoy = localDateStr();
+
+  const clasesDeDate = (fecha) => clases.filter(c => c.fecha === fecha);
+
+  return (
+    <div className="section fade">
+      <div className="seg">
+        <button className={`seg-btn${view==='semana'?' active':''}`} onClick={() => setView('semana')}>Semana</button>
+        <button className={`seg-btn${view==='lista' ?' active':''}`} onClick={() => setView('lista')}>Lista</button>
+      </div>
+
+      {view === 'semana' && (
+        <>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <button className="btn" style={{ color:'var(--txt1)', padding:'6px 14px', background:'var(--bg2)', borderRadius:8, border:'1px solid var(--bdr)', fontSize:18 }}
+              onClick={() => setWeekOffset(w => w-1)}>‹</button>
+            <span style={{ fontSize:13, color:'var(--txt1)' }}>
+              {weekDays[0].toLocaleDateString('es',{month:'short',day:'numeric'})} –{' '}
+              {weekDays[6].toLocaleDateString('es',{month:'short',day:'numeric',year:'numeric'})}
+            </span>
+            <button className="btn" style={{ color:'var(--txt1)', padding:'6px 14px', background:'var(--bg2)', borderRadius:8, border:'1px solid var(--bdr)', fontSize:18 }}
+              onClick={() => setWeekOffset(w => w+1)}>›</button>
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4 }}>
+            {weekDays.map((d, i) => {
+              const ds = localDateStr(d);
+              const isToday = ds === hoy;
+              const hasCls  = clasesDeDate(ds).length > 0;
+              return (
+                <div key={i} style={{
+                  display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+                  padding:'8px 4px',
+                  background: isToday ? 'var(--acc)' : 'var(--bg2)',
+                  borderRadius:10,
+                  border:`1px solid ${isToday ? 'var(--acc)' : 'var(--bdr)'}`,
+                }}>
+                  <span style={{ fontSize:10, color: isToday ? 'rgba(255,255,255,.7)' : 'var(--txt2)' }}>{DAYS[d.getDay()]}</span>
+                  <span style={{ fontSize:14, fontWeight:600, color: isToday ? '#fff' : 'var(--txt0)' }}>{d.getDate()}</span>
+                  {hasCls && <span style={{ width:5, height:5, borderRadius:'50%', background: isToday ? '#fff' : 'var(--acc)' }} />}
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            {weekDays.map((d, i) => {
+              const ds = localDateStr(d);
+              const dayClases = clasesDeDate(ds);
+              if (dayClases.length === 0) return null;
+              return (
+                <div key={i}>
+                  <p style={{ fontSize:12, color:'var(--txt2)', marginBottom:8, fontWeight:500, textTransform:'uppercase', letterSpacing:.5 }}>
+                    {DAYS_FULL[d.getDay()]} {d.getDate()}
+                  </p>
+                  <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                    {dayClases.map(c => (
+                      <ClaseCard key={c.id} clase={c} materias={materias} onDelete={onDelete} onEdit={onEdit} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            {weekDays.every(d => {
+              const ds = localDateStr(d);
+              return clasesDeDate(ds).length === 0;
+            }) && (
+              <div className="empty">
+                <Icon name="calendar" size={40} />
+                <p>Sin clases esta semana</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {view === 'lista' && (
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {clases.length === 0 ? (
+            <div className="empty"><Icon name="calendar" size={40}/><p>Sin clases registradas</p></div>
+          ) : (
+            clases
+              .slice()
+              .sort((a,b) => (a.hora||'').localeCompare(b.hora||''))
+              .map(c => <ClaseCard key={c.id} clase={c} materias={materias} onDelete={onDelete} onEdit={onEdit} />)
+          )}
+        </div>
+      )}
+
+      <div className="spacer-nav" />
+      <button className="fab btn" onClick={onNew}>
+        <Icon name="plus" size={24} color="#fff" />
+      </button>
+    </div>
+  );
+}
+
+function ClaseCard({ clase, materias, onDelete, onEdit }) {
+  const [open, setOpen] = useState(false);
+  const mat = materias.find(m => m.id === clase.materiaId);
+
+  return (
+    <div className="card" style={{ borderLeft:`3px solid ${mat?.color || 'var(--acc)'}` }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+        <div style={{ flex:1, cursor:'pointer' }} onClick={() => setOpen(o => !o)}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:4 }}>
+            {mat && <span style={{ fontSize:12, fontWeight:500, color:mat.color }}>{mat.nombre}</span>}
+            {clase.hora && <span style={{ fontSize:12, color:'var(--txt2)' }}>🕐 {clase.hora}</span>}
+            {clase.fecha && (
+              <span style={{ fontSize:11, color:'var(--txt2)' }}>
+                📅 {new Date(clase.fecha + 'T00:00:00').toLocaleDateString('es', {weekday:'short', day:'numeric', month:'short'})}
+              </span>
+            )}
+          </div>
+          <p style={{ fontSize:14, fontWeight:500, color:'var(--txt0)' }}>{clase.titulo}</p>
+          {clase.bitacora && open && (
+            <p style={{ fontSize:13, color:'var(--txt1)', marginTop:8, lineHeight:1.6, whiteSpace:'pre-wrap' }}>
+              {clase.bitacora}
+            </p>
+          )}
+        </div>
+        <div style={{ display:'flex', gap:2, marginLeft:8, flexShrink:0 }}>
+          <button className="btn" style={{ color:'var(--txt2)', padding:4 }} onClick={() => onEdit(clase)}>
+            <Icon name="edit" size={15} />
+          </button>
+          <button className="btn" style={{ color:'var(--txt2)', padding:4 }} onClick={() => onDelete(clase.id)}>
+            <Icon name="trash" size={15} />
+          </button>
+        </div>
+      </div>
+      {clase.bitacora && (
+        <button
+          onClick={() => setOpen(o => !o)}
+          style={{ fontSize:11, color:'var(--acc2)', background:'none', border:'none', cursor:'pointer', marginTop:6, padding:0 }}
+        >
+          {open ? '▲ Ocultar bitácora' : '▼ Ver bitácora'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Materias ────────────────────────────────────────────────────────────────
+function Materias({ materias, tareas, onNew, onDelete }) {
+  return (
+    <div className="section fade">
+      {materias.length === 0 ? (
+        <div className="empty"><Icon name="book" size={40}/><p>Agregá tus materias del cuatrimestre</p></div>
+      ) : (
+        materias.map(m => {
+          const mt   = tareas.filter(t => t.materiaId === m.id);
+          const done = mt.filter(t => t.done).length;
+          const pct  = mt.length ? Math.round((done / mt.length) * 100) : 0;
+          return (
+            <div key={m.id} className="card pop">
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ width:14, height:40, borderRadius:4, background:m.color, flexShrink:0 }} />
+                  <div>
+                    <p style={{ fontWeight:600, fontSize:15 }}>{m.nombre}</p>
+                    {m.profesor && <p style={{ fontSize:12, color:'var(--txt2)', marginTop:2 }}>Prof. {m.profesor}</p>}
+                  </div>
+                </div>
+                <button className="btn" style={{ color:'var(--txt2)', padding:4 }} onClick={() => onDelete(m.id)}>
+                  <Icon name="trash" size={16} />
+                </button>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'var(--txt1)', marginBottom:8 }}>
+                <span>{mt.length} tarea{mt.length !== 1 ? 's' : ''} · {done} completada{done !== 1 ? 's' : ''}</span>
+                <span style={{ color:m.color, fontWeight:500 }}>{pct}%</span>
+              </div>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width:pct+'%', background:m.color }} />
+              </div>
+            </div>
+          );
+        })
+      )}
+      <div className="spacer-nav" />
+      <button className="fab btn" onClick={onNew}>
+        <Icon name="plus" size={24} color="#fff" />
+      </button>
+    </div>
+  );
+}
+
+// ─── Progreso ─────────────────────────────────────────────────────────────────
+function Progreso({ tareas, totalComp }) {
+  const done  = tareas.filter(t => t.done).length;
+  const total = tareas.length;
+  const pct   = total ? Math.round((done / total) * 100) : 0;
+  const nivel = Math.floor(totalComp / 10) + 1;
+  const xp    = totalComp % 10;
+
+  return (
+    <div className="section fade">
+      <div className="card" style={{
+        textAlign:'center', padding:'28px 16px',
+        background:'linear-gradient(135deg,rgba(99,102,241,.15),rgba(6,182,212,.08))',
+        border:'1px solid rgba(99,102,241,.25)',
+      }}>
+        <p style={{ fontSize:13, color:'var(--txt1)', marginBottom:4 }}>Nivel Académico</p>
+        <p style={{
+          fontSize:56, fontWeight:700,
+          fontFamily:"'Space Grotesk',sans-serif",
+          background:'linear-gradient(135deg,var(--acc2),var(--cyan))',
+          WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+          lineHeight:1.1, marginBottom:4,
+        }}>{nivel}</p>
+        <p style={{ fontSize:13, color:'var(--txt2)', marginBottom:16 }}>
+          {totalComp} tareas completadas en total
+        </p>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'var(--txt2)', marginBottom:6 }}>
+          <span>XP: {xp}/10</span>
+          <span>→ Nivel {nivel + 1}</span>
+        </div>
+        <div className="progress-bar">
+          <div className="progress-fill" style={{ width:(xp * 10)+'%' }} />
+        </div>
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+        {[
+          ['Completadas', done,       'var(--em)'],
+          ['Pendientes',  total-done, 'var(--rose)'],
+          ['Total',       total,      'var(--acc2)'],
+          ['Tasa éxito',  pct+'%',    'var(--amber)'],
+        ].map(([label, value, color]) => (
+          <div key={label} style={{ background:'var(--bg2)', borderRadius:12, padding:14, border:'1px solid var(--bdr)' }}>
+            <p style={{ fontSize:12, color:'var(--txt2)', marginBottom:6 }}>{label}</p>
+            <p style={{ fontSize:26, fontWeight:600, color }}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <p style={{ fontSize:14, fontWeight:500, marginBottom:12, color:'var(--txt1)' }}>🏅 Medallas</p>
+        <div className="card" style={{ padding:'0 16px' }}>
+          {MEDALS.map(m => {
+            const unlocked = totalComp >= m.req;
+            return (
+              <div key={m.id} className="prog-item">
+                <span style={{ fontSize:26, opacity: unlocked ? 1 : .2 }}>{m.icon}</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontWeight:500, fontSize:14, color: unlocked ? 'var(--txt0)' : 'var(--txt2)' }}>{m.name}</p>
+                  <p style={{ fontSize:12, color:'var(--txt2)' }}>{m.desc}</p>
+                </div>
+                {unlocked
+                  ? <span className="pill" style={{ background:'rgba(16,185,129,.15)', color:'#10b981', fontSize:11 }}>✓ Ganada</span>
+                  : <span style={{ fontSize:11, color:'var(--txt2)', whiteSpace:'nowrap' }}>en {m.req - totalComp} más</span>
+                }
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Config ──────────────────────────────────────────────────────────────────
+function Config({ onExport, onImport }) {
+  return (
+    <div className="section fade">
+      <div className="card col" style={{ gap:14 }}>
+        <p style={{ fontSize:13, color:'var(--txt1)', fontWeight:600, textTransform:'uppercase', letterSpacing:.5 }}>
+          Backup de datos
+        </p>
+        <button
+          className="btn"
+          style={{
+            background:'linear-gradient(135deg,var(--acc),var(--vio))',
+            color:'#fff', borderRadius:12, padding:'14px 16px',
+            fontSize:15, fontWeight:500,
+            display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+          }}
+          onClick={onExport}
+        >
+          <Icon name="download" size={20} color="#fff"/>
+          Exportar → backup_facu.json
+        </button>
+        <label style={{
+          background:'var(--bg2)', border:'2px dashed var(--bdr2)',
+          borderRadius:12, padding:'14px 16px',
+          display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+          cursor:'pointer', color:'var(--cyan)', fontSize:15, fontWeight:500,
+        }}>
+          <Icon name="upload" size={20} color="var(--cyan)"/>
+          Importar desde JSON
+          <input type="file" accept=".json" style={{ display:'none' }} onChange={onImport} />
+        </label>
+      </div>
+
+      <div className="card" style={{ background:'rgba(99,102,241,.06)', border:'1px solid rgba(99,102,241,.2)' }}>
+        <p style={{ fontSize:13, color:'var(--acc2)', marginBottom:8, fontWeight:600 }}>💡 Sincronizar entre dispositivos</p>
+        <p style={{ fontSize:13, color:'var(--txt1)', lineHeight:1.7 }}>
+          Exportá el backup en un dispositivo e importalo en otro. Se sobreescribirán todos los datos (materias, tareas y clases).
+        </p>
+      </div>
+
+      <div className="card">
+        <p style={{ fontSize:13, color:'var(--txt1)', marginBottom:10, fontWeight:600 }}>📱 Instalar en iPhone</p>
+        <p style={{ fontSize:13, color:'var(--txt2)', lineHeight:1.8 }}>
+          1. Abrí esta página en <strong style={{color:'var(--txt1)'}}>Safari</strong><br/>
+          2. Tocá el botón <span style={{color:'var(--acc2)'}}>Compartir ⬆</span><br/>
+          3. Seleccioná <span style={{color:'var(--acc2)'}}>«Añadir a pantalla de inicio»</span><br/>
+          4. La app se abrirá sin barras del navegador ✓
+        </p>
+      </div>
+
+      <div style={{ textAlign:'center', padding:'12px 0' }}>
+        <p style={{ fontSize:12, color:'var(--txt2)' }}>FacuApp v1.0 · Offline First ✓</p>
+        <p style={{ fontSize:11, color:'var(--txt2)', marginTop:4 }}>Todos los datos se guardan localmente en tu dispositivo</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Modal ───────────────────────────────────────────────────────────────────
+function Modal({ modal, materias, onClose, onSaveTarea, onSaveMateria, onSaveClase }) {
+  const type = typeof modal === 'string' ? modal : modal.type;
+  const edit = modal.edit || null;
+  const [form, setForm] = useState(edit || {});
+  const set = (k, v) => setForm(f => ({ ...f, [k]:v }));
+
+  const handleSave = () => {
+    if (type === 'tarea') {
+      if (!form.titulo?.trim()) return;
+      onSaveTarea({
+        id:         Date.now().toString(),
+        titulo:     form.titulo.trim(),
+        desc:       form.desc || '',
+        materiaId:  form.materiaId || '',
+        fecha:      form.fecha || '',
+        prioridad:  form.prioridad || 'media',
+        done:       false,
+      });
+    } else if (type === 'materia') {
+      if (!form.nombre?.trim()) return;
+      onSaveMateria({
+        id:       Date.now().toString(),
+        nombre:   form.nombre.trim(),
+        profesor: form.profesor || '',
+        color:    form.color || COLORS[Math.floor(Math.random() * COLORS.length)],
+      });
+    } else if (type === 'clase') {
+      if (!form.titulo?.trim() || !form.fecha) return;
+      const c = {
+        id:          edit?.id || Date.now().toString(),
+        titulo:      form.titulo.trim(),
+        materiaId:   form.materiaId || '',
+        hora:        form.hora || '',
+        fecha:       form.fecha,
+        bitacora:    form.bitacora || '',
+      };
+      onSaveClase(c, edit);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+          <h3>
+            {type === 'tarea'   ? 'Nueva Tarea'
+           : type === 'materia' ? 'Nueva Materia'
+           : edit               ? 'Editar Clase'
+           : 'Nueva Clase'}
+          </h3>
+          <button className="btn" style={{ color:'var(--txt1)', padding:4 }} onClick={onClose}>
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+
+        <div className="col">
+          {/* TAREA */}
+          {type === 'tarea' && <>
+            <div>
+              <label>Título *</label>
+              <input className="inp" placeholder="ej. Entregar TP de Análisis"
+                value={form.titulo||''} onChange={e => set('titulo', e.target.value)} autoFocus />
+            </div>
+            <div>
+              <label>Descripción</label>
+              <textarea className="inp" rows={3} placeholder="Notas adicionales..."
+                value={form.desc||''} onChange={e => set('desc', e.target.value)} />
+            </div>
+            <div className="row">
+              <div style={{flex:1}}>
+                <label>Materia</label>
+                <select className="inp" value={form.materiaId||''} onChange={e => set('materiaId', e.target.value)}>
+                  <option value="">Sin materia</option>
+                  {materias.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+                </select>
+              </div>
+              <div style={{flex:1}}>
+                <label>Prioridad</label>
+                <select className="inp" value={form.prioridad||'media'} onChange={e => set('prioridad', e.target.value)}>
+                  <option value="alta">🔴 Alta</option>
+                  <option value="media">🟡 Media</option>
+                  <option value="baja">🟢 Baja</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label>Fecha límite</label>
+              <input className="inp" type="date" value={form.fecha||''} onChange={e => set('fecha', e.target.value)} />
+            </div>
+          </>}
+
+          {/* MATERIA */}
+          {type === 'materia' && <>
+            <div>
+              <label>Nombre *</label>
+              <input className="inp" placeholder="ej. Análisis Matemático II"
+                value={form.nombre||''} onChange={e => set('nombre', e.target.value)} autoFocus />
+            </div>
+            <div>
+              <label>Profesor/a</label>
+              <input className="inp" placeholder="ej. Dr. García"
+                value={form.profesor||''} onChange={e => set('profesor', e.target.value)} />
+            </div>
+            <div>
+              <label>Color identificador</label>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:4 }}>
+                {COLORS.map(c => (
+                  <div
+                    key={c}
+                    onClick={() => set('color', c)}
+                    style={{
+                      width:32, height:32, borderRadius:8, background:c,
+                      cursor:'pointer',
+                      border: form.color === c ? '3px solid #fff' : '3px solid transparent',
+                      transition:'all .15s',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </>}
+
+          {/* CLASE */}
+          {type === 'clase' && <>
+            <div>
+              <label>Título / Tema *</label>
+              <input className="inp" placeholder="ej. Integrales por partes"
+                value={form.titulo||''} onChange={e => set('titulo', e.target.value)} autoFocus />
+            </div>
+            <div>
+              <label>Materia</label>
+              <select className="inp" value={form.materiaId||''} onChange={e => set('materiaId', e.target.value)}>
+                <option value="">Sin materia</option>
+                {materias.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+              </select>
+            </div>
+            <div className="row">
+              <div style={{flex:1}}>
+                <label>Fecha *</label>
+                <input className="inp" type="date" value={form.fecha||''} onChange={e => set('fecha', e.target.value)} />
+              </div>
+              <div style={{flex:1}}>
+                <label>Horario</label>
+                <input className="inp" type="time" value={form.hora||''} onChange={e => set('hora', e.target.value)} />
+              </div>
+            </div>
+            {!form.fecha && (
+              <p style={{fontSize:12, color:'var(--rose)', marginTop:-4}}>⚠ Elegí una fecha para ver la clase en el calendario</p>
+            )}
+            <div>
+              <label>📓 Bitácora — ¿Qué se vio en clase?</label>
+              <textarea className="inp" rows={4}
+                placeholder="Ej: Se vio integración por sustitución trigonométrica. Ejercicios 3.1 al 3.5..."
+                value={form.bitacora||''} onChange={e => set('bitacora', e.target.value)} />
+            </div>
+          </>}
+
+          <button
+            className="btn"
+            style={{
+              background:'var(--acc)', color:'#fff',
+              borderRadius:12, padding:14,
+              fontSize:15, fontWeight:500, marginTop:4,
+            }}
+            onClick={handleSave}
+          >
+            {edit ? 'Guardar cambios' : 'Agregar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Mount ───────────────────────────────────────────────────────────────────
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+
+<!-- Service Worker registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('[FacuApp] SW registrado:', reg.scope))
+        .catch(err => console.warn('[FacuApp] SW error:', err));
+    });
+  }
+</script>
+</body>
+</html>
